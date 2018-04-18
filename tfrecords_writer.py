@@ -16,7 +16,7 @@
 #   -Feb 2017 by Grant Watson for independent use.
 """
 Editor's Note: As mentioned above, I edited this. In particular, I made it to
-work with an unlabelled set of images. Original file here:
+work with an unlabelled set of images.       Original file here:
     https://github.com/tensorflow/models/blob/master/inception/inception/data/build-image-data.py
 
 --------------------
@@ -181,7 +181,7 @@ def _process_image(filename, coder):
   height = image.shape[0]
   width = image.shape[1]
   assert image.shape[2] == 3
-
+  print ("Processed ", filename)
   return image_data, height, width
 
 
@@ -202,7 +202,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames,
   # For instance, if num_shards = 128, and the num_threads = 2, then the first
   # thread would produce shards [0, 64).
   num_threads = len(ranges)
-  assert not num_shards % num_threads 
+  assert not num_shards % num_threads
   num_shards_per_batch = int(num_shards / num_threads)
 
   shard_ranges = np.linspace(ranges[thread_index][0],

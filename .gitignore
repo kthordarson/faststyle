@@ -1,2 +1,10 @@
 *.pyc
 *.npz
+models/*
+style_images/*
+training/*
+summaries/*
+sampleframes/*
+test/*
+wptest/*
+

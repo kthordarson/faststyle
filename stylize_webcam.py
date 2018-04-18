@@ -69,7 +69,7 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
 
     # Instantiate a Writer to save the video.
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    fourcc = cv2.cv.CV_FOURCC(*'XVID')
     out = cv2.VideoWriter('output.avi', fourcc, 15.0, (x_new, y_new))
 
     # Begin filtering.
