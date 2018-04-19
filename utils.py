@@ -9,6 +9,7 @@ Date: Feb 2017
 
 import tensorflow as tf
 import cv2
+import scipy.misc, numpy as np, os, sys
 
 
 def imread(path):
@@ -20,6 +21,25 @@ def imread(path):
     img = cv2.imread(path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
+
+def imread2(path, img_size=False):
+    """Wrapper around cv2.imread. Switches channels to keep everything in RGB.
+
+    :param path:
+        String indicating path to image.
+    """
+    img = scipy.misc.imread(path, mode='RGB') # misc.imresize(, (256, 256, 3))
+    if not (len(img.shape) == 3 and img.shape[2] == 3):
+        img = np.dstack((img,img,img))
+    if img_size != False:
+        img = scipy.misc.imresize(img, img_size)
+    return img
+
+    # img = cv2.imread(path)
+    #img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    #return img
+
+
 
 
 def imresize(img, scale):
@@ -39,6 +59,21 @@ def imresize(img, scale):
                          fx=scale, fy=scale)
     return img
 
+def imresize_xy(img, width, height):
+    """Depending on if we scale the image up or down, we use an interpolation
+    technique as per OpenCV recommendation.
+
+    :param img:
+        3D numpy array of image.
+    :param x,y:
+        integer x y size.
+    """
+#    width = 350
+#    height = 450
+
+    dim = (width, height)
+    img = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+    return img
 
 def imwrite(path, img):
     """Wrapper around cv2.imwrite. Switches it to RGB input convention.

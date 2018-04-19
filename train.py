@@ -104,55 +104,31 @@ def setup_parser():
                         default='resize')
     return parser
 
-def renderframe(modeltest,outname, sess):
+def renderframe(modeltest,outname, sess, upsample_method):
 # TODO finish this
-#final_saver.save(sess, 'models/' + model_name + '_final.ckpt')
-    print ("model file: " + modeltest + ' saved test file ' + outname)
+    print ("Model: " + modeltest + ' saved test file ' + outname)
+    # load test image
     input_img_path = '/home/kth/deepstuff/frames/bk01.jpg'
+    testimg = utils.imread2(input_img_path)
+    # testimg = utils.imresize(testimg, 1)
+    testimg = utils.imresize_xy(testimg,256,256)
+    testimg_4d = testimg[np.newaxis, :]  #  .astype(np.float32)
 
+#    tf.reset_default_graph()
+    with tf.variable_scope('img_t_net_test', reuse=tf.AUTO_REUSE):
+        Xtest = tf.placeholder(tf.float32, shape=testimg_4d.shape, name='input')
+        Ytest = create_net(Xtest, upsample_method)
 
-    img = utils.imread(input_img_path)
-    img = utils.imresize(img, 1)
-    img_4d = img[np.newaxis, :]
-    #tensor.reset_default_graph()
-    with tf.variable_scope('img_t_net',reuse=tf.AUTO_REUSE):
-        X = tf.placeholder(tf.float32, shape=img_4d.shape, name='input')
-        Y = create_net(X, 'resize')
-
-    #
-    # # Create the graph to make preview image.
-    # with tf.variable_scope('img_t1_net'):
-#    X = tf.placeholder(tf.float32, shape=img_4d.shape, name='input')
-#    Y = create_net(X, 'resize')
-    # # Saver used to restore the model to the session.
-    testsaver = tf.train.Saver()
-    #
-    # # Filter the input image.
-    modelfile = "models/" + modeltest + '_final.ckpt'
-    print ("Loading model " + modelfile)
-    try:
-        testsaver.restore(sess, modelfile)
-    except:
-        print ("megaerror")
+    init_op = tf.group(tf.global_variables_initializer(),
+                   tf.local_variables_initializer())
     print ("Evaluating test image...")
-    img_out = sess.run(Y, feed_dict={X: img_4d})
+
+    with tf.Session() as sesstest:
+        sesstest.run(init_op)
+        img_out = sesstest.run(Ytest, feed_dict={Xtest: testimg_4d})
     img_out = np.squeeze(img_out)
     utils.imwrite(outname, img_out)
-#    with tf.Session() as sess:
-#         print 'Loading up model...'
-#         testsaver.restore(sess, modelfile)
-#         print 'Evaluating...'
-#         img_out = sess.run(Y, feed_dict={X: img_4d})
 
-#    img_out = np.squeeze(img_out)
-#    utils.imwrite(output_img_path, img_out)
-
-    # Read + preprocess input image.
-
-
-#img_out = sess.run(Y, feed_dict={X: style_img})
-#img_out = np.squeeze(img_out)
-#utils.imwrite(output_img_path, img_out)
 
 
 def main(args):
@@ -203,23 +179,12 @@ def main(args):
     # Clean up so we can re-create vgg connected to our image network.
     print 'Resetting default graph.'
     tf.reset_default_graph()
-
     # Load in image transformation network into default graph.
     shape = [batch_size] + preprocess_size + [3]
-    with tf.variable_scope('img_t_net', reuse=tf.AUTO_REUSE): # add reuse=tf.AUTO_REUSE
+    with tf.variable_scope('img_t_net'): # add reuse=tf.AUTO_REUSE
         X = tf.placeholder(tf.float32, shape=shape, name='input')
         Y = create_net(X, upsample_method)
 
-    # Read + preprocess input image.
-#    input_img_path = '/home/kth/deepstuff/frames/bk01.jpg'
-#    img = utils.imread(input_img_path)
-#    content_target_resize = 1
-#    img = utils.imresize(img, content_target_resize)
-#    img_4d = img[np.newaxis, :]
-# reuse=tf.AUTO_REUSE
-#    with tf.variable_scope('img_t_nettest'):
-#        Xtest = tf.placeholder(tf.float32, shape=img_4d.shape, name='input')
-#        Ytest = create_net(Xtest, upsample_method)
 
     # Connect vgg directly to the image transformation network.
     with tf.variable_scope('vgg'):
@@ -302,12 +267,13 @@ def main(args):
 
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-
+        print ("Begin...")
         try:
             while not coord.should_stop():
+                print ("Running............")
                 current_step = sess.run(global_step)
                 batch = sess.run(batch_op)
-
+                print ("coord.should_stop()")
                 # Collect content targets
                 content_data = sess.run(content_layers,
                                         feed_dict={Y: batch})
@@ -327,14 +293,8 @@ def main(args):
                     output_img_path = 'sampleframes/' + model_name + '-' + str(current_step) + '.jpg'
                     model_test_path = 'training/'+model_name+'.ckpt-' + str(current_step)
                     final_saver.save(sess, 'models/' + model_name + '_final.ckpt')
-                    renderframe(model_name,output_img_path, sess)
-                    #os.system("python stylize_image.py --input_img_path " + "/home/kth/deepstuff/frames/bk01.jpg " + "--output_img_path ttt22.jpg" + " --model_path training/wptest-a2.ckpt-"+str(current_step))
-#                    print (runcmd)
-#                    style_img.shape=(2,256,256,3)
-                    #style_img.shape[:1] = 2
-                    #style_img.shape[:2] = 256
-                    #style_img.shape[:3] = 256
-                    #style_img.shape[:4] = 3
+                    # render test
+                    renderframe(model_name,output_img_path, sess, upsample_method) # or Ytest Xtest
 
                 elif (current_step % 10 == 0):
                     # Collect some diagnostic data for Tensorboard.
@@ -359,9 +319,7 @@ def main(args):
             # in predict.py
             final_saver.save(sess, 'models/' + model_name + '_final.ckpt')
             print ("ran final saver....")
-
             coord.request_stop()
-
         coord.join(threads)
 
 
