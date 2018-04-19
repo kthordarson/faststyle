@@ -110,8 +110,8 @@ def renderframe(modeltest,outname, sess, upsample_method):
     # load test image
     input_img_path = '/home/kth/deepstuff/frames/bk01.jpg'
     testimg = utils.imread2(input_img_path)
-    # testimg = utils.imresize(testimg, 1)
-    testimg = utils.imresize_xy(testimg,256,256)
+    testimg = utils.imresize(testimg, 1)
+    #testimg = utils.imresize_xy(testimg,256,256)
     testimg_4d = testimg[np.newaxis, :]  #  .astype(np.float32)
 
 #    tf.reset_default_graph()
